@@ -47,7 +47,9 @@ extern "C" fn handle() {
 
                 session.msg_ids = (msg_id, msg::id());
                 session.session_status = SessionStatus::MessageSent;
-                unsafe { SESSION = Some(session); }
+                unsafe {
+                    SESSION = Some(session);
+                }
                 exec::wait();
             }
             SessionAction::CheckWord(word) => {
@@ -70,7 +72,9 @@ extern "C" fn handle() {
 
                 session.msg_ids = (msg_id, msg::id());
                 session.session_status = SessionStatus::MessageSent;
-                unsafe { SESSION = Some(session); }
+                unsafe {
+                    SESSION = Some(session);
+                }
                 exec::wait();
             }
             SessionAction::CheckGameStatus => {
@@ -83,7 +87,9 @@ extern "C" fn handle() {
                     msg::reply(SessionEvent::GameError("Game timeout".into()), 0)
                         .expect("Error in sending a reply");
                 }
-                unsafe { SESSION = Some(session); }
+                unsafe {
+                    SESSION = Some(session);
+                }
             }
         },
         SessionStatus::MessageSent => {
@@ -102,7 +108,9 @@ extern "C" fn handle() {
                     .expect("Error in sending a reply");
 
                 session.session_status = SessionStatus::Waiting;
-                unsafe { SESSION = Some(session); }
+                unsafe {
+                    SESSION = Some(session);
+                }
             }
             Event::WordChecked {
                 user,
@@ -124,7 +132,9 @@ extern "C" fn handle() {
                 .expect("Error in sending a reply");
 
                 session.session_status = SessionStatus::Waiting;
-                unsafe { SESSION = Some(session); }
+                unsafe {
+                    SESSION = Some(session);
+                }
             }
         },
         SessionStatus::GameOver(outcome) => {
