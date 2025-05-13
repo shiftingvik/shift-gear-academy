@@ -25,7 +25,7 @@ extern "C" fn init() {
 
 #[no_mangle]
 extern "C" fn handle() {
-    let mut session = unsafe { SESSION.as_mut().expect("Session is not initialized") }.clone();
+    let mut session = unsafe { SESSION.as_ref().expect("Session is not initialized") }.clone();
     let action: SessionAction = msg::load().expect("Unable to decode `Action`");
 
     let current_status = session.session_status.clone();
@@ -36,22 +36,18 @@ extern "C" fn handle() {
                 session.start_block_height = exec::block_height();
                 session.attempts = MAX_ATTEMPTS;
 
-                unsafe {
-                    let msg_id = msg::send(
-                        session.target_program_id,
-                        WordleAction::StartGame {
-                            user: msg::source(),
-                        },
-                        0,
-                    )
-                    .expect("Error in sending a message");
+                let msg_id = msg::send(
+                    session.target_program_id,
+                    WordleAction::StartGame {
+                        user: msg::source(),
+                    },
+                    0,
+                )
+                .expect("Error in sending a message");
 
-                    session.msg_ids = (msg_id, msg::id());
-                }
+                session.msg_ids = (msg_id, msg::id());
                 session.session_status = SessionStatus::MessageSent;
-                unsafe {
-                    SESSION = Some(session);
-                }
+                unsafe { SESSION = Some(session); }
                 exec::wait();
             }
             SessionAction::CheckWord(word) => {
@@ -62,23 +58,19 @@ extern "C" fn handle() {
                     return;
                 }
 
-                unsafe {
-                    let msg_id = msg::send(
-                        session.target_program_id,
-                        WordleAction::CheckWord {
-                            user: msg::source(),
-                            word,
-                        },
-                        0,
-                    )
-                    .expect("Error in sending a message");
+                let msg_id = msg::send(
+                    session.target_program_id,
+                    WordleAction::CheckWord {
+                        user: msg::source(),
+                        word,
+                    },
+                    0,
+                )
+                .expect("Error in sending a message");
 
-                    session.msg_ids = (msg_id, msg::id());
-                }
+                session.msg_ids = (msg_id, msg::id());
                 session.session_status = SessionStatus::MessageSent;
-                unsafe {
-                    SESSION = Some(session);
-                }
+                unsafe { SESSION = Some(session); }
                 exec::wait();
             }
             SessionAction::CheckGameStatus => {
@@ -91,9 +83,7 @@ extern "C" fn handle() {
                     msg::reply(SessionEvent::GameError("Game timeout".into()), 0)
                         .expect("Error in sending a reply");
                 }
-                unsafe {
-                    SESSION = Some(session);
-                }
+                unsafe { SESSION = Some(session); }
             }
         },
         SessionStatus::MessageSent => {
@@ -112,9 +102,7 @@ extern "C" fn handle() {
                     .expect("Error in sending a reply");
 
                 session.session_status = SessionStatus::Waiting;
-                unsafe {
-                    SESSION = Some(session);
-                }
+                unsafe { SESSION = Some(session); }
             }
             Event::WordChecked {
                 user,
@@ -136,9 +124,7 @@ extern "C" fn handle() {
                 .expect("Error in sending a reply");
 
                 session.session_status = SessionStatus::Waiting;
-                unsafe {
-                    SESSION = Some(session);
-                }
+                unsafe { SESSION = Some(session); }
             }
         },
         SessionStatus::GameOver(outcome) => {
@@ -152,6 +138,10 @@ extern "C" fn handle_reply() {
     let reply_to = msg::reply_to().expect("Failed to query reply_to data");
     let session = unsafe { SESSION.as_mut().expect("Session is not initialized") };
     let event: Event = msg::load().expect("Unable to decode `Event`");
+
+    if msg::id() != session.msg_ids.0 {
+        return;
+    }
 
     session.session_status = SessionStatus::MessageReceived(event);
     exec::wake(session.msg_ids.1).expect("Failed to wake up the message");
